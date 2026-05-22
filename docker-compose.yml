@@ -1,0 +1,56 @@
+version: "3.9"
+
+# Team Greenlight — DSN x BCT LLM Agent Hackathon 3.0
+# Runs Task A (port 8001) and Task B (port 8002) as separate services
+# sharing a read-only data volume.
+#
+# Usage:
+#   docker-compose up --build          # first run (builds images)
+#   docker-compose up                  # subsequent runs
+#   docker-compose down                # stop all services
+
+services:
+
+  # ── Task A: User Modelling ──────────────────────────────────────────────────
+  task_a:
+    build:
+      context: .
+      dockerfile: task_a/Dockerfile
+    container_name: greenlight_task_a
+    ports:
+      - "8001:8001"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+    volumes:
+      - ./data:/app/data:ro        # shared read-only data directory
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  # ── Task B: Recommendation ──────────────────────────────────────────────────
+  task_b:
+    build:
+      context: .
+      dockerfile: task_b/Dockerfile
+    container_name: greenlight_task_b
+    ports:
+      - "8002:8002"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+    volumes:
+      - ./data:/app/data:ro        # shared read-only data directory
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
+      interval: 30s
+      timeout: 15s
+      start_period: 60s            # Task B needs extra time to load FAISS index
+      retries: 3
