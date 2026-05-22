@@ -21,7 +21,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; \
     SentenceTransformer('all-MiniLM-L6-v2')"
 
 COPY task_b/ .
-COPY data/ /app/data/
+COPY data/ /data/
 
 EXPOSE 8002
 
