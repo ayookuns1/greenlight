@@ -55,7 +55,7 @@ Both services are containerised FastAPI applications powered by **Google Gemini 
 
 ### 1. Clone and configure
 ```bash
-git clone <repo-url>
+git clone https://github.com/ayookuns1/greenlight
 cd greenlight
 cp .env.example .env
 # Edit .env and add your GEMINI_API_KEY
