@@ -3,11 +3,11 @@ __pycache__/
 *.pyc
 *.pyo
 .DS_Store
-data/combined_sample.json
-data/user_profiles.json
 data/faiss_index/
-data/faiss_index.pkl
 data/all-MiniLM-L6-v2/
 results/*.json
 *.egg-info/
 .ipynb_checkpoints/
+
+test_retrieval.py
+.claude/
