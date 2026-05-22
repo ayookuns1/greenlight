@@ -120,11 +120,34 @@ def _build_or_load_index():
         logger.info("Loading cached retrieval index...")
         with open(FAISS_INDEX_PATH, "rb") as f:
             cache = pickle.load(f)
-        _INDEX      = cache["index"]
         _EMBEDDINGS = cache["embeddings"]
         _ITEM_TEXTS = cache["item_texts"]
-        logger.info(f"Loaded index ({cache.get('method','unknown')} method).")
-        return
+        method      = cache.get("method", "unknown")
+
+        # If the cache holds neural embeddings (numpy array), always rebuild
+        # the FAISS index from scratch — this is cross-platform safe and takes
+        # under a second, unlike re-encoding which takes 20+ minutes.
+        if method == "sentence-transformers+faiss" and isinstance(_EMBEDDINGS, np.ndarray):
+            try:
+                import faiss
+                logger.info("Rebuilding FAISS index from cached embeddings...")
+                dim    = _EMBEDDINGS.shape[1]
+                _INDEX = faiss.IndexFlatIP(dim)
+                _INDEX.add(_EMBEDDINGS.astype("float32"))
+                logger.info(f"FAISS index ready. {_INDEX.ntotal:,} vectors.")
+                return
+            except Exception as e:
+                logger.warning(f"FAISS unavailable ({e}), will use TF-IDF fallback.")
+
+        # TF-IDF path: index object is the vectorizer itself
+        cached_index = cache.get("index")
+        if cached_index is not None and hasattr(cached_index, "transform"):
+            _INDEX = cached_index
+            logger.info(f"Loaded TF-IDF index ({method} method).")
+            return
+
+        logger.warning("Cached index unusable — rebuilding from scratch.")
+        _ITEM_TEXTS = []   # force rebuild below
 
     _load_data()
 
